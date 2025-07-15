@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FitMood AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 1rem;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+    .star {
+      color: #ccc;
+      transition: color 0.3s;
+    }
+    .star.selected {
+      color: gold;
+    }
+    .feedback-msg {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 0.5rem;
+      color: #2ecc71;
+    }
+    #feedback-section {
+      display: none;
+      text-align: center;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ NAVBAR -->
+  <nav class="top-nav">
+    <div class="nav-container">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Fit Melody Logo" class="logo-img">
+      </div>
+      <ul class="nav-links">
+        <li><a href="#">Home</a></li>
+        <li><a href="#biometrics">Biometrics</a></li>
+        <li><a href="#charts">History</a></li>
+        <li><a href="#profile">Music</a></li>
+      </ul>
+      <a href="#biometrics" class="nav-btn">Start</a>
+    </div>
+  </nav>
+
+  <!-- ✅ HEADER -->
+  <header class="top-bar">
+    <h1>🎵🎵 FitMelody 🎵🎵</h1>
+    <p>Transform your biometrics into personalized relaxing music</p>
+  </header>
+
+  <!-- ✅ HERO -->
+  <section class="hero-banner">
+    <img src="{{ url_for('static', filename='image/image1.jpeg') }}" alt="Relaxation AI watch" class="hero-image" />
+    <p class="hero-caption">
+      Relaxing with music generated from your own heartbeat. The future of personalized wellness is here.
+    </p>
+  </section>
+
+  <!-- ✅ BIOMETRICS -->
+  <main>
+    <section class="data-section" id="biometrics">
+      <h2>📊 Biometric Data (Live from Fitbit)</h2>
+      <div class="grid">
+        <div class="card"><label>📅 Date: <span id="date-val">-</span></label></div>
+        <div class="card"><label>🕒 Time: <span id="time-val">-</span></label></div>
+        <div class="card"><label>❤️ Heart Rate: <span id="bpm-val">...</span> BPM</label></div>
+        <div class="card"><label>🔥 Calories: <span id="cal-val">...</span></label></div>
+        <div class="card"><label>🪑 Sedentary Minutes: <span id="sedentary-val">...</span></label></div>
+        <div class="card"><label>🏃 Steps: <span id="steps-val">...</span></label></div>
+        <div class="card"><label>💤 Asleep: <span id="asleep-val">...</span> min</label></div>
+        <div class="card"><label>⚡ Efficiency: <span id="eff-val">...</span>%</label></div>
+        <div class="card"><label>🌙 REM: <span id="rem-val">...</span> min</label></div>
+        <div class="card"><label>🛌 Deep: <span id="deep-val">...</span> min</label></div>
+        <div class="card"><label>⏰ Wake: <span id="wake-val">...</span> min</label></div>
+      </div>
+      <button id="generate-music-btn">🎵 Generate Music</button>
+      <p id="status-msg" style="margin-top:1rem; font-weight:bold;"></p>
+    </section>
+
+    <!-- ✅ GRAPHIQUES -->
+    <section class="chart-section" id="charts">
+      <h2>📈 60 Last Minutes Graph</h2>
+      <div class="charts-container">
+        <div class="chart-card"><h3>❤️ Heart Rate</h3><canvas id="chart-heart"></canvas></div>
+        <div class="chart-card"><h3>🏃 Steps</h3><canvas id="chart-steps"></canvas></div>
+        <div class="chart-card"><h3>🔥 Calories</h3><canvas id="chart-calories"></canvas></div>
+        <div class="chart-card"><h3>🪑 Sedentary Minutes</h3><canvas id="chart-sedentary"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ✅ MUSIQUE + FEEDBACK -->
+    <section class="music-profile" id="profile">
+      <h2>🎶 AI Music Profile</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>🎧 Generated Profile</h3>
+          <p id="profile-info">Click "Generate Music" to see results.</p>
+        </div>
+        <div class="card">
+          <h3>▶️ Now Playing</h3>
+          <p id="track-name">-</p>
+          <audio id="audio-player" controls>
+            <source id="audio-src" src="#" type="audio/mp3"/>
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+      </div>
+
+      <!-- ⭐ FEEDBACK SECTION -->
+      <div id="feedback-section">
+        <h3>⭐ Donnez votre avis</h3>
+        <div class="stars">
+          <span class="star" data-value="1">★</span>
+          <span class="star" data-value="2">★</span>
+          <span class="star" data-value="3">★</span>
+          <span class="star" data-value="4">★</span>
+          <span class="star" data-value="5">★</span>
+        </div>
+        <p class="feedback-msg" id="feedback-msg"></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ✅ JS -->
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const res = await fetch("/biometrics");
+      const data = await res.json();
+      document.getElementById("date-val").textContent = data.date || "-";
+      document.getElementById("time-val").textContent = data.time || "-";
+      document.getElementById("bpm-val").textContent = data.bpm || "-";
+      document.getElementById("cal-val").textContent = data.cal || "-";
+      document.getElementById("sedentary-val").textContent = data.sedentary || "-";
+      document.getElementById("steps-val").textContent = data.steps || "-";
+      document.getElementById("asleep-val").textContent = data.asleep || "-";
+      document.getElementById("eff-val").textContent = data.eff || "-";
+      document.getElementById("rem-val").textContent = data.rem || "-";
+      document.getElementById("deep-val").textContent = data.deep || "-";
+      document.getElementById("wake-val").textContent = data.wake || "-";
+
+      await renderChart("heart_history", "chart-heart", "Heart Rate (BPM)");
+      await renderChart("steps_history", "chart-steps", "Steps");
+      await renderChart("calories_history", "chart-calories", "Calories");
+      await renderChart("sedentary_history", "chart-sedentary", "Sedentary Minutes");
+    });
+
+    async function renderChart(endpoint, canvasId, label) {
+      const res = await fetch(`/${endpoint}`);
+      const data = await res.json();
+      const times = data.map(d => d.time);
+      const values = data.map(d => d.value);
+
+      new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: {
+          labels: times,
+          datasets: [{
+            label: label,
+            data: values,
+            fill: false,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { display: true, title: { display: true, text: 'Time' }},
+            y: { display: true, title: { display: true, text: label }}
+          }
+        }
+      });
+    }
+
+    document.getElementById("generate-music-btn").addEventListener("click", async () => {
+      const msg = document.getElementById("status-msg");
+      msg.textContent = "⏳ Génération de la musique...";
+      const biometricData = {
+        date: document.getElementById("date-val").textContent,
+        time: document.getElementById("time-val").textContent,
+        bpm: document.getElementById("bpm-val").textContent,
+        cal: document.getElementById("cal-val").textContent,
+        sedentary: document.getElementById("sedentary-val").textContent,
+        steps: document.getElementById("steps-val").textContent,
+        asleep: document.getElementById("asleep-val").textContent,
+        eff: document.getElementById("eff-val").textContent,
+        rem: document.getElementById("rem-val").textContent,
+        deep: document.getElementById("deep-val").textContent,
+        wake: document.getElementById("wake-val").textContent
+      };
+      try {
+        const response = await fetch("/generate_music", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(biometricData),
+        });
+        const result = await response.json();
+        if (result.status === "success") {
+          msg.textContent = "✅ Musique générée avec succès !";
+          document.getElementById("track-name").textContent = result.filename;
+          document.getElementById("audio-src").src = result.url;
+          document.getElementById("audio-player").load();
+          document.getElementById("feedback-section").style.display = "block"; // afficher les étoiles
+        } else {
+          msg.textContent = "❌ Erreur : " + result.message;
+        }
+      } catch (err) {
+        msg.textContent = "❌ Une erreur est survenue.";
+      }
+    });
+
+    // ⭐ Feedback étoilé
+    document.querySelectorAll(".star").forEach(star => {
+      star.addEventListener("click", () => {
+        const rating = star.getAttribute("data-value");
+        document.querySelectorAll(".star").forEach(s => s.classList.remove("selected"));
+        for (let i = 1; i <= rating; i++) {
+          document.querySelector(`.star[data-value="${i}"]`).classList.add("selected");
+        }
+        document.getElementById("feedback-msg").textContent = `Merci pour votre note : ${rating} ⭐`;
+      });
+    });
+  </script>
+<script>
+  let currentInputText = "";
+  let currentMusicPrompt = "";
+
+  document.getElementById("generate-music-btn").addEventListener("click", async () => {
+    const biometricData = {
+      date: document.getElementById("date-val").textContent,
+      time: document.getElementById("time-val").textContent,
+      bpm: document.getElementById("bpm-val").textContent,
+      cal: document.getElementById("cal-val").textContent,
+      sedentary: document.getElementById("sedentary-val").textContent,
+      steps: document.getElementById("steps-val").textContent,
+      asleep: document.getElementById("asleep-val").textContent,
+      eff: document.getElementById("eff-val").textContent,
+      rem: document.getElementById("rem-val").textContent,
+      deep: document.getElementById("deep-val").textContent,
+      wake: document.getElementById("wake-val").textContent
+    };
+
+    currentInputText = Object.entries(biometricData)
+      .map(([k, v]) => `${k}:${v}`).join(" ");
+
+    const res = await fetch("/generate_music", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(biometricData)
+    });
+    const result = await res.json();
+
+    if (result.status === "success") {
+      document.getElementById("audio-src").src = result.url;
+      document.getElementById("audio-player").load();
+      document.getElementById("track-name").textContent = result.filename;
+      currentMusicPrompt = result.prompt;
+    }
+  });
+
+  // ✅ VRAI système de feedback
+  document.querySelectorAll(".star").forEach((star, index) => {
+    star.addEventListener("click", async () => {
+      const score = index + 1;
+
+      // Activer visuellement les étoiles
+      document.querySelectorAll(".star").forEach((s, i) => {
+        s.classList.toggle("selected", i <= index);
+      });
+
+      // ✅ Affichage
+      document.getElementById("feedback-msg").textContent = `Merci pour votre note : ${score} ⭐`;
+
+      // ✅ Appel API Flask
+      const payload = {
+        input_text: currentInputText,
+        music_prompt: currentMusicPrompt,
+        score
+      };
+
+      const res = await fetch("/submit_feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      console.log("✅ Serveur dit :", result.message);
+    });
+  });
+</script>
+
+
+
+</body>
+</html>

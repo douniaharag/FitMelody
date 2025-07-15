@@ -1,0 +1,6 @@
+Flask
+requests
+gunicorn
+fitbit
+cherrypy
+azure-storage-blob>=12.14.1

@@ -1,0 +1,9 @@
+flask
+torch
+transformers
+datasets
+peft
+azure-storage-blob
+azure-identity
+pandas
+sentencepiece
