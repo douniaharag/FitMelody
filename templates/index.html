@@ -60,7 +60,13 @@
     <p>Transform your biometrics into personalized relaxing music</p>
   </header>
 
-  <!-- Note : section HERO supprimée -->
+  <!-- HERO -->
+  <section class="hero-banner">
+    <img src="{{ url_for('static', filename='image/image1.jpeg') }}" alt="Relaxation AI watch" class="hero-image" />
+    <p class="hero-caption">
+      Relaxing with music generated from your own heartbeat. The future of personalized wellness is here.
+    </p>
+  </section>
 
   <main>
     <!-- BIOMETRICS -->
@@ -79,7 +85,7 @@
         <div class="card"><label>🛌 Deep: <span id="deep-val">...</span> min</label></div>
         <div class="card"><label>⏰ Wake: <span id="wake-val">...</span> min</label></div>
       </div>
-      <button id="generate-music-btn">🎵 Generate Music</button>
+      <button id="generate-music-btn" style="display:none">🎵 Generate Music</button>
       <p id="status-msg" style="margin-top:1rem; font-weight:bold;"></p>
     </section>
 
@@ -105,7 +111,7 @@
         <div class="card">
           <h3>▶️ Now Playing</h3>
           <p id="track-name">-</p>
-          <audio id="audio-player" controls>
+          <audio id="audio-player" controls style="display:none; opacity:0;">
             <source id="audio-src" src="#" type="audio/mp3"/>
             Your browser does not support the audio element.
           </audio>
@@ -198,20 +204,23 @@
           body: JSON.stringify(biometricData)
         });
         const result = await response.json();
+        const audioPlayer = document.getElementById("audio-player");
+        const audioSrc = document.getElementById("audio-src");
 
         if (result.status === "success") {
           audioSrc.src = result.url;
           audioPlayer.style.display = "block";
-          audioPlayer.pause();
-          audioPlayer.currentTime = 0;
-          document.getElementById("track-name").textContent = result.filename;
-          document.getElementById("feedback-section").style.display = "block";
+          audioPlayer.load();
+          setTimeout(() => {
+            audioPlayer.play();
+            statusMsg.textContent = "✅ Musique générée avec succès ! Profitez-en 🎧";
+            statusMsg.style.color = "#55efc4";
+            document.getElementById("track-name").textContent = result.filename;
+            document.getElementById("feedback-section").style.display = "block";
+          }, 500);
 
           lastPrompt = result.prompt;
           lastInputText = result.input_text;
-
-          statusMsg.textContent = "✅ Musique générée avec succès ! Profitez-en 🎧";
-          statusMsg.style.color = "#55efc4";
         } else {
           statusMsg.textContent = "❌ Erreur : " + result.message;
           statusMsg.style.color = "#ff7675";
