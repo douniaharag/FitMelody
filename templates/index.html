@@ -14,6 +14,17 @@
     .star.selected { color: gold; }
     .feedback-msg { text-align: center; font-weight: bold; margin-top: 0.5rem; color: #2ecc71; }
     #feedback-section { display: none; text-align: center; margin-top: 2rem; }
+    #btn-play-pause {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 20px;
+      background-color: #4a90e2;
+      color: white;
+      cursor: pointer;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -92,10 +103,11 @@
         <div class="card">
           <h3>▶️ Now Playing</h3>
           <p id="track-name">-</p>
-          <audio id="audio-player" controls style="display:none; opacity:0;">
+          <audio id="audio-player" controls style="display:none; opacity:0; width: 100%; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
             <source id="audio-src" src="#" type="audio/mp3"/>
             Your browser does not support the audio element.
           </audio>
+          <button id="btn-play-pause">▶️ Play</button>
         </div>
       </div>
 
@@ -160,6 +172,25 @@
     });
 
     let lastPrompt = "", lastInputText = "";
+    const audioPlayer = document.getElementById("audio-player");
+    const btnPlayPause = document.getElementById("btn-play-pause");
+
+    btnPlayPause.style.display = "none"; // caché au départ
+
+    btnPlayPause.addEventListener("click", () => {
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        btnPlayPause.textContent = "⏸️ Pause";
+      } else {
+        audioPlayer.pause();
+        btnPlayPause.textContent = "▶️ Play";
+      }
+    });
+
+    audioPlayer.addEventListener("ended", () => {
+      btnPlayPause.textContent = "▶️ Play";
+    });
+
     document.getElementById("generate-music-btn").addEventListener("click", async () => {
       const statusMsg = document.getElementById("status-msg");
       statusMsg.textContent = "🎶 Génération en cours... Veuillez patienter...";
@@ -186,23 +217,26 @@
           body: JSON.stringify(biometricData)
         });
         const result = await response.json();
-        const audioPlayer = document.getElementById("audio-player");
-        const audioSrc = document.getElementById("audio-src");
 
         if (result.status === "success") {
+          const audioSrc = document.getElementById("audio-src");
+
           audioSrc.src = result.url;
           audioPlayer.style.display = "block";
+          audioPlayer.style.opacity = 1;
           audioPlayer.load();
-          setTimeout(() => {
-            audioPlayer.play();
-            statusMsg.textContent = "✅ Musique générée avec succès ! Profitez-en 🎧";
-            statusMsg.style.color = "#55efc4";
-            document.getElementById("track-name").textContent = result.filename;
-            document.getElementById("feedback-section").style.display = "block";
-          }, 500);
+
+          btnPlayPause.style.display = "inline-block";
+          btnPlayPause.textContent = "▶️ Play";
+
+          document.getElementById("track-name").textContent = result.filename;
+          document.getElementById("feedback-section").style.display = "block";
+          statusMsg.textContent = "✅ Musique générée avec succès ! Profitez-en 🎧";
+          statusMsg.style.color = "#55efc4";
 
           lastPrompt = result.prompt;
           lastInputText = result.input_text;
+
         } else {
           statusMsg.textContent = "❌ Erreur : " + result.message;
           statusMsg.style.color = "#ff7675";
