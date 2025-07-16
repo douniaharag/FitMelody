@@ -8,32 +8,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .stars {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 1rem;
-      font-size: 2rem;
-      cursor: pointer;
-    }
-    .star {
-      color: #ccc;
-      transition: color 0.3s;
-    }
-    .star.selected {
-      color: gold;
-    }
-    .feedback-msg {
-      text-align: center;
-      font-weight: bold;
-      margin-top: 0.5rem;
-      color: #2ecc71;
-    }
-    #feedback-section {
-      display: none;
-      text-align: center;
-      margin-top: 2rem;
-    }
+    html { scroll-behavior: smooth; }
+    .stars { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; font-size: 2rem; cursor: pointer; }
+    .star { color: #ccc; transition: color 0.3s; }
+    .star.selected { color: gold; }
+    .feedback-msg { text-align: center; font-weight: bold; margin-top: 0.5rem; color: #2ecc71; }
+    #feedback-section { display: none; text-align: center; margin-top: 2rem; }
   </style>
 </head>
 <body>
@@ -50,7 +30,8 @@
         <li><a href="#charts">History</a></li>
         <li><a href="#profile">Music</a></li>
       </ul>
-      <a href="#biometrics" class="nav-btn">Start</a>
+      <!-- Start redirige vers l'endpoint OAuth -->
+      <a href="/authorize" class="nav-btn">Start</a>
     </div>
   </nav>
 
@@ -150,6 +131,7 @@
       const statusMsg = document.getElementById("status-msg");
 
       try {
+        // Vérifie la connexion Fitbit après callback
         const res = await fetch("/biometrics", { redirect: "manual" });
         if (res.status === 302) {
           return; // non autorisé → on reste sur la page (Start redirige vers /authorize)
