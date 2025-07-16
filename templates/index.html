@@ -8,35 +8,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    html {
-      scroll-behavior: smooth;
-    }
-    .stars {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 1rem;
-      font-size: 2rem;
-      cursor: pointer;
-    }
-    .star {
-      color: #ccc;
-      transition: color 0.3s;
-    }
-    .star.selected {
-      color: gold;
-    }
-    .feedback-msg {
-      text-align: center;
-      font-weight: bold;
-      margin-top: 0.5rem;
-      color: #2ecc71;
-    }
-    #feedback-section {
-      display: none;
-      text-align: center;
-      margin-top: 2rem;
-    }
+    html { scroll-behavior: smooth; }
+    .stars { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; font-size: 2rem; cursor: pointer; }
+    .star { color: #ccc; transition: color 0.3s; }
+    .star.selected { color: gold; }
+    .feedback-msg { text-align: center; font-weight: bold; margin-top: 0.5rem; color: #2ecc71; }
+    #feedback-section { display: none; text-align: center; margin-top: 2rem; }
   </style>
 </head>
 <body>
@@ -53,7 +30,8 @@
         <li><a href="#charts">History</a></li>
         <li><a href="#profile">Music</a></li>
       </ul>
-      <a href="#biometrics" class="nav-btn">Start</a>
+      <!-- Start redirige vers l'endpoint OAuth -->
+      <a href="/authorize" class="nav-btn">Start</a>
     </div>
   </nav>
 
@@ -88,7 +66,6 @@
         <div class="card"><label>🛌 Deep: <span id="deep-val">...</span> min</label></div>
         <div class="card"><label>⏰ Wake: <span id="wake-val">...</span> min</label></div>
       </div>
-      <!-- Masqué par défaut, affiché après vérif -->
       <button id="generate-music-btn" style="display:none">🎵 Generate Music</button>
       <p id="status-msg" style="margin-top:1rem; font-weight:bold;"></p>
     </section>
@@ -122,7 +99,6 @@
         </div>
       </div>
 
-      <!-- SECTION FEEDBACK -->
       <div id="feedback-section">
         <h3>⭐ Donnez votre avis</h3>
         <div class="stars">
@@ -137,9 +113,7 @@
     </section>
   </main>
 
-  <!-- JS -->
   <script>
-    // Fonction pour tracer un chart
     async function renderChart(endpoint, canvasId, label) {
       const res = await fetch(`/${endpoint}`);
       const data = await res.json();
@@ -147,33 +121,21 @@
       const values = data.map(d => d.value);
       new Chart(document.getElementById(canvasId), {
         type: 'line',
-        data: {
-          labels: times,
-          datasets: [{ label, data: values, fill: false, borderWidth: 2 }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { display: true, title: { display: true, text: 'Time' }},
-            y: { display: true, title: { display: true, text: label }}
-          }
-        }
+        data: { labels: times, datasets: [{ label, data: values, fill: false, borderWidth: 2 }] },
+        options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Time' }}, y: { display: true, title: { display: true, text: label }} }}
       });
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
       const btnGenerate = document.getElementById("generate-music-btn");
-      const statusMsg   = document.getElementById("status-msg");
+      const statusMsg = document.getElementById("status-msg");
 
       try {
-        // Intercepter le redirect 302
+        // Vérifie la connexion Fitbit après callback
         const res = await fetch("/biometrics", { redirect: "manual" });
         if (res.status === 302) {
-          // Pas de token Fitbit → on s’autorise
-          return window.location.href = "/authorize";
+          return; // non autorisé → on reste sur la page (Start redirige vers /authorize)
         }
-
-        // Sinon on reçoit les données
         const data = await res.json();
         document.getElementById("date-val").textContent      = data.date      || "-";
         document.getElementById("time-val").textContent      = data.time      || "-";
@@ -187,23 +149,16 @@
         document.getElementById("deep-val").textContent      = data.deep      || "-";
         document.getElementById("wake-val").textContent      = data.wake      || "-";
 
-        // Afficher et activer le bouton
         btnGenerate.style.display = "inline-block";
-
-        // Tracer les graphiques
         await renderChart("heart_history", "chart-heart", "Heart Rate (BPM)");
         await renderChart("steps_history", "chart-steps", "Steps");
         await renderChart("calories_history", "chart-calories", "Calories");
         await renderChart("sedentary_history", "chart-sedentary", "Sedentary Minutes");
-
       } catch (err) {
-        console.error("Erreur lors du chargement des données :", err);
-        statusMsg.textContent = "❌ Impossible de charger les données Fitbit.";
-        statusMsg.style.color = "#ff7675";
+        console.error(err);
       }
     });
 
-    // Génération de la musique & affichage feedback
     let lastPrompt = "", lastInputText = "";
     document.getElementById("generate-music-btn").addEventListener("click", async () => {
       const statusMsg = document.getElementById("status-msg");
@@ -228,11 +183,11 @@
         const response = await fetch("/generate_music", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(biometricData),
+          body: JSON.stringify(biometricData)
         });
         const result = await response.json();
         const audioPlayer = document.getElementById("audio-player");
-        const audioSrc    = document.getElementById("audio-src");
+        const audioSrc = document.getElementById("audio-src");
 
         if (result.status === "success") {
           audioSrc.src = result.url;
@@ -246,7 +201,7 @@
             document.getElementById("feedback-section").style.display = "block";
           }, 500);
 
-          lastPrompt    = result.prompt;
+          lastPrompt = result.prompt;
           lastInputText = result.input_text;
         } else {
           statusMsg.textContent = "❌ Erreur : " + result.message;
@@ -259,26 +214,18 @@
       }
     });
 
-    // Envoi du feedback
     document.querySelectorAll(".star").forEach((star, index) => {
       star.addEventListener("click", async () => {
         const rating = index + 1;
-        document.querySelectorAll(".star").forEach((s, i) => {
-          s.classList.toggle("selected", i <= index);
-        });
+        document.querySelectorAll(".star").forEach((s, i) => s.classList.toggle("selected", i <= index));
         const feedbackMsg = document.getElementById("feedback-msg");
         feedbackMsg.textContent = `Merci pour votre note : ${rating} ⭐`;
         feedbackMsg.style.color = "#00b894";
-
         try {
           const res = await fetch("/submit_feedback", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input_text: lastInputText,
-              music_prompt: lastPrompt,
-              score: rating
-            })
+            body: JSON.stringify({ input_text: lastInputText, music_prompt: lastPrompt, score: rating })
           });
           const result = await res.json();
           console.log("✅ Feedback envoyé :", result.message);
@@ -292,4 +239,3 @@
   </script>
 </body>
 </html>
-
