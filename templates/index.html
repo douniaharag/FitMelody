@@ -8,12 +8,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    html { scroll-behavior: smooth; }
-    .stars { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; font-size: 2rem; cursor: pointer; }
-    .star { color: #ccc; transition: color 0.3s; }
-    .star.selected { color: gold; }
-    .feedback-msg { text-align: center; font-weight: bold; margin-top: 0.5rem; color: #2ecc71; }
-    #feedback-section { display: none; text-align: center; margin-top: 2rem; }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 1rem;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+    .star {
+      color: #ccc;
+      transition: color 0.3s;
+    }
+    .star.selected {
+      color: gold;
+    }
+    .feedback-msg {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 0.5rem;
+      color: #2ecc71;
+    }
+    #feedback-section {
+      display: none;
+      text-align: center;
+      margin-top: 2rem;
+    }
   </style>
 </head>
 <body>
@@ -30,8 +50,7 @@
         <li><a href="#charts">History</a></li>
         <li><a href="#profile">Music</a></li>
       </ul>
-      <!-- Start redirige vers l'endpoint OAuth -->
-      <a href="/authorize" class="nav-btn">Start</a>
+      <a href="#biometrics" class="nav-btn">Start</a>
     </div>
   </nav>
 
@@ -41,13 +60,7 @@
     <p>Transform your biometrics into personalized relaxing music</p>
   </header>
 
-  <!-- HERO -->
-  <section class="hero-banner">
-    <img src="{{ url_for('static', filename='image/image1.jpeg') }}" alt="Relaxation AI watch" class="hero-image" />
-    <p class="hero-caption">
-      Relaxing with music generated from your own heartbeat. The future of personalized wellness is here.
-    </p>
-  </section>
+  <!-- Note : section HERO supprimée -->
 
   <main>
     <!-- BIOMETRICS -->
@@ -66,7 +79,7 @@
         <div class="card"><label>🛌 Deep: <span id="deep-val">...</span> min</label></div>
         <div class="card"><label>⏰ Wake: <span id="wake-val">...</span> min</label></div>
       </div>
-      <button id="generate-music-btn" style="display:none">🎵 Generate Music</button>
+      <button id="generate-music-btn">🎵 Generate Music</button>
       <p id="status-msg" style="margin-top:1rem; font-weight:bold;"></p>
     </section>
 
@@ -92,14 +105,14 @@
         <div class="card">
           <h3>▶️ Now Playing</h3>
           <p id="track-name">-</p>
-          <audio id="audio-player" controls style="opacity:1;">
-            <source id="audio-src" src="#" type="audio/mp3" />
+          <audio id="audio-player" controls>
+            <source id="audio-src" src="#" type="audio/mp3"/>
             Your browser does not support the audio element.
           </audio>
         </div>
       </div>
 
-      <div id="feedback-section" style="display:none;">
+      <div id="feedback-section">
         <h3>⭐ Donnez votre avis</h3>
         <div class="stars">
           <span class="star" data-value="1">★</span>
@@ -133,7 +146,7 @@
       try {
         const res = await fetch("/biometrics", { redirect: "manual" });
         if (res.status === 302) {
-          return; // pas autorisé → on reste sur page (bouton Start redirige vers /authorize)
+          return; // non autorisé → on reste sur la page (Start redirige vers /authorize)
         }
         const data = await res.json();
         document.getElementById("date-val").textContent      = data.date      || "-";
@@ -189,7 +202,7 @@
         if (result.status === "success") {
           audioSrc.src = result.url;
           audioPlayer.style.display = "block";
-          audioPlayer.pause();  // Ne lance pas automatiquement
+          audioPlayer.pause();
           audioPlayer.currentTime = 0;
           document.getElementById("track-name").textContent = result.filename;
           document.getElementById("feedback-section").style.display = "block";
@@ -210,7 +223,6 @@
       }
     });
 
-    // Feedback utilisateur
     document.querySelectorAll(".star").forEach((star, index) => {
       star.addEventListener("click", async () => {
         const rating = index + 1;
