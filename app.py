@@ -13,31 +13,28 @@ from scripts.oauth2_utils import (
     load_token
 )
 
-# ─── 1. Création de l'app et configuration secrète ──────────────────────────
+print("=== Démarrage de l'application Flask ===")
+
 app = Flask(__name__)
-app.secret_key = os.environ["FLASK_SECRET_KEY"]
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 
-# ─── 2. Identifiants Fitbit et redirect URI ─────────────────────────────────
-CLIENT_ID     = os.environ["CLIENT_ID"]
-CLIENT_SECRET = os.environ["CLIENT_SECRET"]
-REDIRECT_URI  = os.environ["REDIRECT_URI"]
+# ENV variables
+CLIENT_ID     = os.environ.get("CLIENT_ID")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+REDIRECT_URI  = os.environ.get("REDIRECT_URI")
+AZ_CONN_STR        = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+AUDIO_CONTAINER    = os.environ.get("AUDIO_CONTAINER")
+FEEDBACK_CONTAINER = os.environ.get("FEEDBACK_CONTAINER")
+AZURE_MODEL_ENDPOINT = os.environ.get("AZURE_MODEL_ENDPOINT")
 
-# ─── 3. Configuration Azure Blob Storage ────────────────────────────────────
-AZ_CONN_STR        = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
-AUDIO_CONTAINER    = os.environ["AUDIO_CONTAINER"]
-FEEDBACK_CONTAINER = os.environ["FEEDBACK_CONTAINER"]
-
+# Azure Blob Clients
 blob_service_client = BlobServiceClient.from_connection_string(AZ_CONN_STR)
-
-# Création des clients de conteneur
 audio_container_client    = blob_service_client.get_container_client(AUDIO_CONTAINER)
 feedback_container_client = blob_service_client.get_container_client(FEEDBACK_CONTAINER)
 
-# ─── 4. Fonctions d’aide Fitbit ─────────────────────────────────────────────
 def get_fb_client():
     token = session.get("fitbit_token") or load_token()
     if not token:
-        print("⚠️ Aucun token Fitbit, redirection vers /authorize")
         return None
     return fitbit.Fitbit(
         CLIENT_ID,
@@ -46,8 +43,6 @@ def get_fb_client():
         access_token=token["access_token"],
         refresh_token=token["refresh_token"]
     )
-
-# ─── 5. Routes de l'application ─────────────────────────────────────────────
 
 @app.route("/authorize")
 def authorize():
@@ -94,7 +89,6 @@ def biometrics():
                 data[label] = last["value"]
                 latest_time = last["time"]
 
-    # Données de sommeil
     sleep_url = f"https://api.fitbit.com/1.2/user/-/sleep/date/{today}.json"
     sleep_resp = requests.get(sleep_url, headers=headers)
     sleep_summary = {}
@@ -103,10 +97,10 @@ def biometrics():
         summary = ms["levels"]["summary"]
         sleep_summary = {
             "asleep": ms.get("minutesAsleep", 0),
-            "eff":    ms.get("efficiency", 0),
-            "rem":    summary.get("rem", {}).get("minutes", 0),
-            "deep":   summary.get("deep", {}).get("minutes", 0),
-            "wake":   summary.get("wake", {}).get("minutes", 0),
+            "eff": ms.get("efficiency", 0),
+            "rem": summary.get("rem", {}).get("minutes", 0),
+            "deep": summary.get("deep", {}).get("minutes", 0),
+            "wake": summary.get("wake", {}).get("minutes", 0),
         }
 
     final_data = {
@@ -118,7 +112,6 @@ def biometrics():
         "sedentary": data.get("MinutesSedentary", "-"),
         **sleep_summary
     }
-
     return jsonify(final_data)
 
 @app.route("/generate_music", methods=["POST"])
@@ -126,45 +119,41 @@ def generate_music():
     d = request.json or {}
     biometric_input = " ".join(f"{k}:{v}" for k, v in d.items())
 
-    # 1️⃣ Appel modèle Azure ML pour générer le prompt
     try:
-        ml_endpoint = os.environ["AZUREML_ENDPOINT"]
-        ml_key = os.environ["AZUREML_KEY"]
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {ml_key}"
-        }
-        payload = {"biometric": biometric_input}
-        ml_resp = requests.post(ml_endpoint, json=payload, headers=headers, timeout=300)
-        ml_resp.raise_for_status()
-        result = ml_resp.json()
-        prompt = result["generated_prompt"]
+        response = requests.post(
+            AZURE_MODEL_ENDPOINT,
+            json={"biometric": biometric_input},
+            timeout=300
+        )
+        response.raise_for_status()
+        model_result = response.json()
+        prompt = model_result.get("generated_prompt", "")
+        if not prompt:
+            return jsonify({"status": "error", "message": "Le modèle n'a pas retourné de prompt"}), 500
     except Exception as e:
-        return jsonify({"status": "error", "message": f"Erreur Azure ML : {str(e)}"})
+        return jsonify({"status": "error", "message": f"Erreur modèle : {str(e)}"}), 500
 
-    # 2️⃣ Appel Hugging Face pour générer la musique
+    # Appel à MusicGen Hugging Face
     try:
         HF_API = "https://douniaharag-fitmusicgen-api.hf.space/generate"
         music_payload = {"prompt": prompt, "duration": 30}
         music_resp = requests.post(HF_API, json=music_payload, timeout=300)
         music_resp.raise_for_status()
-        audio_data = music_resp.content
     except Exception as e:
-        return jsonify({"status": "error", "message": f"Erreur Hugging Face : {str(e)}"})
+        return jsonify({"status": "error", "message": f"Erreur MusicGen HF : {str(e)}"}), 500
 
-    # 3️⃣ Sauvegarde dans Azure Blob Storage
-    filename = f"music_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.wav"
-    try:
-        blob_client = audio_container_client.get_blob_client(filename)
-        blob_client.upload_blob(audio_data, overwrite=True)
-        audio_url = blob_client.url
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Erreur upload audio : {str(e)}"})
+    # Sauvegarde du fichier audio dans Azure Blob
+    from io import BytesIO
+    from datetime import datetime
+
+    filename = f"music_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.wav"
+    blob_client = audio_container_client.get_blob_client(filename)
+    blob_client.upload_blob(BytesIO(music_resp.content), overwrite=True)
 
     return jsonify({
         "status": "success",
         "filename": filename,
-        "url": audio_url,
+        "url": blob_client.url,
         "prompt": prompt,
         "input_text": biometric_input
     })
@@ -172,9 +161,9 @@ def generate_music():
 @app.route("/submit_feedback", methods=["POST"])
 def submit_feedback():
     data = request.json or {}
-    input_text = data.get("input_text", "").strip()
+    input_text   = data.get("input_text", "").strip()
     music_prompt = data.get("music_prompt", "").strip()
-    score = data.get("score", None)
+    score        = data.get("score", None)
 
     if not input_text or not music_prompt or score is None:
         return jsonify({"status": "error", "message": "Champs manquants"})
@@ -193,7 +182,6 @@ def submit_feedback():
     esc_input = input_text.replace('"', '""')
     esc_prompt = music_prompt.replace('"', '""')
     rows.append(f'"{esc_input}","{esc_prompt}",{score}')
-
     content = "\n".join(lines + rows) + "\n"
     blob_client.upload_blob(content, overwrite=True)
 
@@ -226,10 +214,9 @@ def last_60min_values(path):
     resp = requests.get(url, headers=headers)
     if resp.status_code != 200:
         return jsonify([])
+
     dataset = next((v for k, v in resp.json().items() if "intraday" in k), {}).get("dataset", [])
     return jsonify(dataset[-60:] if len(dataset) >= 60 else dataset)
 
-# ─── 6. Lancement local ─────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("✅ Démarrage local Flask sur http://127.0.0.1:5000")
     app.run(host="127.0.0.1", port=5000, debug=False)
