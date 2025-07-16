@@ -12,17 +12,18 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 # === Variables Azure Blob Storage ===
-
-AZURE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
-if not AZURE_CONNECTION_STRING:
-    logging.error("AZURE_STORAGE_CONNECTION_STRING environment variable is not set")
-    raise ValueError("AZURE_STORAGE_CONNECTION_STRING environment variable is not set")
+# On essaie d'abord AZURE_CONNECTION_STRING, sinon AZURE_STORAGE_CONNECTION_STRING
+conn_str = os.environ.get("AZURE_CONNECTION_STRING") \
+           or os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+if not conn_str:
+    logging.error("AZURE_CONNECTION_STRING and AZURE_STORAGE_CONNECTION_STRING are not set")
+    raise ValueError("Il faut définir AZURE_CONNECTION_STRING ou AZURE_STORAGE_CONNECTION_STRING")
 
 CONTAINER_NAME = "model"
 LOCAL_LORA_DIR = "/tmp/lora_model"
 LOCAL_T5_DIR = "/tmp/t5-base-finetuned"
 
-logging.info(f"AZURE_CONNECTION_STRING is set")
+logging.info("Using Azure connection string for Blob Storage")
 
 # Création des dossiers locaux si nécessaire
 os.makedirs(LOCAL_LORA_DIR, exist_ok=True)
@@ -30,20 +31,16 @@ os.makedirs(LOCAL_T5_DIR, exist_ok=True)
 
 def download_folder_from_blob(container_client, blob_folder, local_folder):
     os.makedirs(local_folder, exist_ok=True)
-    try:
-        blobs = container_client.list_blobs(name_starts_with=f"{blob_folder}/")
-        for blob in blobs:
-            filename = os.path.basename(blob.name)
-            if not filename:
-                continue
-            blob_client = container_client.get_blob_client(blob.name)
-            dest_path = os.path.join(local_folder, filename)
-            with open(dest_path, "wb") as f:
-                f.write(blob_client.download_blob().readall())
-            logging.info(f"🟢 {blob_folder} > {filename} téléchargé dans {dest_path}")
-    except Exception as e:
-        logging.error(f"❌ Erreur lors du téléchargement de {blob_folder} : {e}")
-        raise
+    blobs = container_client.list_blobs(name_starts_with=f"{blob_folder}/")
+    for blob in blobs:
+        filename = os.path.basename(blob.name)
+        if not filename:
+            continue
+        blob_client = container_client.get_blob_client(blob.name)
+        dest_path = os.path.join(local_folder, filename)
+        with open(dest_path, "wb") as f:
+            f.write(blob_client.download_blob().readall())
+        logging.info(f"🟢 {blob_folder} > {filename} téléchargé dans {dest_path}")
 
 def download_latest_lora(container_client):
     latest_blob = container_client.get_blob_client("latest.txt")
@@ -57,7 +54,7 @@ def download_t5_base(container_client):
     download_folder_from_blob(container_client, "t5-base-finetuned", LOCAL_T5_DIR)
 
 # Connexion au container blob
-blob_service_client = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
+blob_service_client = BlobServiceClient.from_connection_string(conn_str)
 container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
 # Télécharger les modèles au démarrage
@@ -76,19 +73,25 @@ model.eval()
 
 @app.route("/score", methods=["POST"])
 def score():
-    data = request.get_json()
+    data = request.get_json() or {}
     biometric = data.get("biometric", "")
     prompt = f"Generate music style: {biometric}"
 
     logging.info(f"Received scoring request with biometric: {biometric}")
 
-    input_ids = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=64).input_ids
+    input_ids = tokenizer(
+        prompt,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=64
+    ).input_ids
+
     with torch.no_grad():
         output = model.generate(input_ids, max_new_tokens=16)
     text = tokenizer.decode(output[0], skip_special_tokens=True)
 
     logging.info(f"Generated prompt: {text}")
-
     return jsonify({"generated_prompt": text})
 
 if __name__ == "__main__":
