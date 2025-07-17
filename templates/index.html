@@ -1,320 +1,524 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FitMood AI</title>
-
-  <!-- Template CSS -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/templatemo-chain-app-dev.css') }}" />
-
-  <!-- Google Fonts Raleway -->
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet" />
-
-  <!-- Chart.js CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
-    /* Ajout styles perso */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Raleway', sans-serif;
+      background: linear-gradient(to bottom, #F5F7FA, #DDE6ED);
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      background: #FFFFFF;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .logo-img {
+      max-width: 100%;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(134, 100, 200, 0.4);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    nav .logo {
+      font-size: 1.8rem;
+      color: #219EBC;
+      font-weight: 700;
+    }
+
+    nav ul {
+      display: flex;
+      gap: 30px;
+      list-style: none;
+    }
+
+    nav ul li a:hover {
+      color: #126782;
+    }
+
+    .btn-connect {
+      background: linear-gradient(to right, #8ECAE6, #219EBC);
+      padding: 10px 22px;
+      color: #fff;
+      border-radius: 30px;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(33, 158, 188, 0.3);
+    }
+
+    .presentation {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+      padding: 80px 40px;
+      max-width: 1400px;
+      margin: auto;
+    }
+
+    .presentation img {
+      max-width: 100%;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .presentation .text {
+      flex: 1 1 500px;
+      animation: fadeInUp 1.5s ease both;
+    }
+
+    .presentation h2 {
+      font-size: 2.8rem;
+      color: #4A4E69;
+      margin-bottom: 20px;
+    }
+
+    .presentation p {
+      font-size: 1.2rem;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+
+    .presentation a {
+      display: inline-block;
+      background: linear-gradient(to right, #8ECAE6, #219EBC);
+      padding: 14px 30px;
+      border-radius: 30px;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 0 15px rgba(33, 158, 188, 0.2);
+      transition: background 0.3s;
+    }
+
+    .presentation a:hover {
+      background: #219EBC;
+    }
+
+    .section {
+      max-width: 1000px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    h2.section-title {
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: #4A4E69;
+      text-align: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #FFFFFF;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      color: #333;
+    }
+
+    .chart {
+      background: #FFFFFF;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
     #generate-music-btn {
+      display: block;
+      margin: 30px auto;
+      background: linear-gradient(to right, #8ECAE6, #219EBC);
+      padding: 14px 30px;
+      border: none;
+      color: #fff;
+      border-radius: 30px;
+      font-weight: bold;
       cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #generate-music-btn:hover {
+      background: #219EBC;
+    }
+
+    #status-msg {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 1rem;
+      color: #126782;
+    }
+
+    /* Feedback stars */
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 1rem;
+      font-size: 2rem;
+      cursor: pointer;
+    }
+    .star {
+      color: #ccc;
+      transition: color 0.3s;
+    }
+    .star.selected {
+      color: gold;
+    }
+    .feedback-msg {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 0.5rem;
+      color: #2ecc71;
     }
     #feedback-section {
       display: none;
+      text-align: center;
+      margin-top: 2rem;
+    }
+    #btn-play-pause {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 20px;
+      background-color: #4a90e2;
+      color: white;
+      cursor: pointer;
+      display: none;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    @keyframes fadeInUp {
+      0% {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .presentation {
+        flex-direction: column;
+        text-align: center;
+      }
     }
   </style>
 </head>
-
 <body>
+
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg">
-    <div class="container">
-      <a class="navbar-brand" href="#">
-        <img src="{{ url_for('static', filename='image/logo.png') }}" alt="Fit Melody Logo" style="height: 40px;" />
-        FitMelody
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="#biometrics">Biometrics</a></li>
-          <li class="nav-item"><a class="nav-link" href="#charts">History</a></li>
-          <li class="nav-item"><a class="nav-link" href="#profile">Music</a></li>
-          <li class="nav-item">
-            <!-- Lien vers ton endpoint /authorize -->
-            <a href="/authorize" class="btn btn-primary ms-lg-3">Start</a>
-          </li>
-        </ul>
-      </div>
-    </div>
+  <nav>
+    <div class="logo">Fit Melody</div>
+    <ul>
+      <li><a href="#biometrics">Biometrics</a></li>
+      <li><a href="#charts">History</a></li>
+      <li><a href="#music">Music</a></li>
+    </ul>
+    <a href="/authorize" class="btn-connect">Connexion Fitbit</a>
   </nav>
 
-  <!-- Hero section -->
-  <section class="hero-section pt-5">
-    <div class="container text-center">
-      <h1>🎵🎵 FitMelody 🎵🎵</h1>
-      <p class="mb-5">Transform your biometrics into personalized relaxing music</p>
-      <img src="{{ url_for('static', filename='image/image1.jpeg') }}" alt="Relax AI Watch" class="img-fluid rounded shadow" style="max-width: 300px;" />
-      <p class="mt-4">
-        Relaxing with music generated from your own heartbeat. The future of personalized wellness is here.
-      </p>
+  <!-- Présentation -->
+  <section class="presentation">
+    <div style="flex:1 1 50%; display: flex; justify-content: center;">
+       <img src="{{ url_for('static', filename='image/photo.png') }}" alt="Fit Melody Logo" class="logo-img">
+    </div>
+    </div>
+    <div class="text">
+      <h2>Votre corps crée la musique</h2>
+      <p>FitMood AI transforme vos données de santé (cardio, sommeil, activité) en une expérience musicale personnalisée.</p>
+      <a href="#biometrics">Démarrer maintenant</a>
     </div>
   </section>
 
-  <!-- Main content -->
-  <main class="container my-5">
-    <!-- Biometric Data -->
-    <section id="biometrics" class="mb-5">
-      <h2 class="mb-4">📊 Biometric Data (Live from Fitbit)</h2>
-      <div class="row g-3">
-        <div class="col-md-4"><div class="card p-3 shadow-sm">📅 Date: <span id="date-val">-</span></div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">🕒 Time: <span id="time-val">-</span></div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">❤️ Heart Rate: <span id="bpm-val">...</span> BPM</div></div>
+  <!-- Données Biométriques -->
+  <section class="section" id="biometrics">
+    <h2 class="section-title">📊 Données biométriques</h2>
+    <div class="grid">
+      <div class="card">📅 <strong>Date:</strong> <span id="date-val">...</span></div>
+      <div class="card">🕒 <strong>Heure:</strong> <span id="time-val">...</span></div>
+      <div class="card">❤️ <strong>Fréquence cardiaque:</strong> <span id="bpm-val">...</span> BPM</div>
+      <div class="card">🔥 <strong>Calories:</strong> <span id="cal-val">...</span></div>
+      <div class="card">🪑 <strong>Sédentarité:</strong> <span id="sedentary-val">...</span> min</div>
+      <div class="card">🏃 <strong>Pas:</strong> <span id="steps-val">...</span></div>
+      <div class="card">💤 <strong>Sommeil:</strong> <span id="sleep-val">...</span> min</div>
+      <div class="card">⚡ <strong>Efficacité:</strong> <span id="eff-val">...</span> %</div>
+      <div class="card">🌙 <strong>REM:</strong> <span id="rem-val">...</span> min</div>
+      <div class="card">🛌 <strong>Profond:</strong> <span id="deep-val">...</span> min</div>
+      <div class="card">⏰ <strong>Éveillé:</strong> <span id="wake-val">...</span> min</div>
+    </div>
+    <button id="generate-music-btn">🎵 Générer ma musique</button>
+    <div id="status-msg"></div>
+  </section>
 
-        <div class="col-md-4"><div class="card p-3 shadow-sm">🔥 Calories: <span id="cal-val">...</span></div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">🪑 Sedentary Minutes: <span id="sedentary-val">...</span></div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">🏃 Steps: <span id="steps-val">...</span></div></div>
-
-        <div class="col-md-4"><div class="card p-3 shadow-sm">💤 Asleep: <span id="asleep-val">...</span> min</div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">⚡ Efficiency: <span id="eff-val">...</span>%</div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">🌙 REM: <span id="rem-val">...</span> min</div></div>
-
-        <div class="col-md-4"><div class="card p-3 shadow-sm">🛌 Deep: <span id="deep-val">...</span> min</div></div>
-        <div class="col-md-4"><div class="card p-3 shadow-sm">⏰ Wake: <span id="wake-val">...</span> min</div></div>
+  <!-- GRAPHIQUES -->
+  <section class="chart-section" id="charts" style="padding: 60px 40px;">
+    <h2 style="text-align:center; color:#c39bff; font-size: 2rem; margin-bottom: 40px;">
+      📈 Historique
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;">
+      <div style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px;">
+        <h3 style="margin-bottom: 10px;">❤️ Fréquence cardiaque</h3>
+        <canvas id="chart-heart" height="200"></canvas>
       </div>
+      <div style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px;">
+        <h3 style="margin-bottom: 10px;">🔥 Calories</h3>
+        <canvas id="chart-calories" height="200"></canvas>
+      </div>
+      <div style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px;">
+        <h3 style="margin-bottom: 10px;">🏃 Pas</h3>
+        <canvas id="chart-steps" height="200"></canvas>
+      </div>
+      <div style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px;">
+        <h3 style="margin-bottom: 10px;">🪑 Sédentarité</h3>
+        <canvas id="chart-sedentary" height="200"></canvas>
+      </div>
+    </div>
+  </section>
 
-      <button id="generate-music-btn" class="btn btn-primary btn-lg mt-4" style="display:none;">
-        🎵 Generate Music
+  <!-- Profil musical -->
+  <section class="section" id="music">
+    <h2 class="section-title">🎶 Votre musique générée</h2>
+    <div class="card" style="padding: 30px;">
+      <p id="track-name" style="font-size: 1.2rem; margin-bottom: 15px;">🎧 Aucune musique générée pour l’instant</p>
+
+      <audio id="audio-player" controls style="width:100%; display: none; border-radius: 10px; box-shadow: 0 0 15px rgba(134, 100, 200, 0.3);">
+        <source id="audio-src" src="#" type="audio/mp3" />
+        Votre navigateur ne supporte pas l'audio HTML5.
+      </audio>
+
+      <button id="btn-play-pause" style="margin-top: 20px; padding: 10px 20px; display: none; background: #8664c8; color: #fff; border: none; border-radius: 30px; cursor: pointer;">
+        ▶️ Play
       </button>
+    </div>
 
-      <p id="status-msg" class="mt-3 fw-bold"></p>
-    </section>
-
-    <!-- Charts Section -->
-    <section id="charts" class="mb-5">
-      <h2>📈 60 Last Minutes Graph</h2>
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card p-3 shadow-sm">
-            <h5>❤️ Heart Rate</h5>
-            <canvas id="chart-heart"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card p-3 shadow-sm">
-            <h5>🏃 Steps</h5>
-            <canvas id="chart-steps"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6 mt-4">
-          <div class="card p-3 shadow-sm">
-            <h5>🔥 Calories</h5>
-            <canvas id="chart-calories"></canvas>
-          </div>
-        </div>
-        <div class="col-md-6 mt-4">
-          <div class="card p-3 shadow-sm">
-            <h5>🪑 Sedentary Minutes</h5>
-            <canvas id="chart-sedentary"></canvas>
-          </div>
-        </div>
+    <div id="feedback-section">
+      <h3 style="text-align:center; margin-top: 20px;">⭐ Donnez votre avis</h3>
+      <div class="stars">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
       </div>
-    </section>
+      <p class="feedback-msg" id="feedback-msg"></p>
+    </div>
+  </section>
 
-    <!-- Music & Feedback -->
-    <section id="profile" class="mb-5">
-      <h2 class="mb-4">🎶 AI Music Profile</h2>
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card p-4 shadow-sm" style="min-height: 140px;">
-            <h5>🎧 Generated Profile</h5>
-            <p id="profile-info">Click "Generate Music" to see results.</p>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card p-4 shadow-sm text-center">
-            <h5>▶️ Now Playing</h5>
-            <p id="track-name" class="mb-3">-</p>
-            <audio id="audio-player" controls style="display:none; opacity:0; transition: opacity 0.6s;">
-              <source id="audio-src" src="#" type="audio/mp3" />
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-        </div>
-      </div>
-
-      <div id="feedback-section" class="mt-4">
-        <h5>⭐ Donnez votre avis</h5>
-        <div class="stars" style="justify-content: center;">
-          <span class="star" data-value="1" style="font-size: 2rem; cursor: pointer;">★</span>
-          <span class="star" data-value="2" style="font-size: 2rem; cursor: pointer;">★</span>
-          <span class="star" data-value="3" style="font-size: 2rem; cursor: pointer;">★</span>
-          <span class="star" data-value="4" style="font-size: 2rem; cursor: pointer;">★</span>
-          <span class="star" data-value="5" style="font-size: 2rem; cursor: pointer;">★</span>
-        </div>
-        <p class="feedback-msg" id="feedback-msg"></p>
-      </div>
-    </section>
-  </main>
-
-  <!-- Template JS -->
-  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-
-  <script>
-    // Fonction pour dessiner un graphique avec Chart.js
-    async function renderChart(endpoint, canvasId, label) {
+<script>
+  async function renderChart(endpoint, canvasId, label) {
+    try {
       const res = await fetch(`/${endpoint}`);
       const data = await res.json();
       const times = data.map(d => d.time);
       const values = data.map(d => d.value);
+
       new Chart(document.getElementById(canvasId), {
-        type: "line",
+        type: 'line',
         data: {
           labels: times,
-          datasets: [
-            {
-              label,
-              data: values,
-              fill: false,
-              borderWidth: 2,
-              borderColor: "#4a90e2",
-              backgroundColor: "#4a90e2",
-            },
-          ],
+          datasets: [{
+            label,
+            data: values,
+            borderColor: '#8664c8',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 2,
+            tension: 0.3
+          }]
         },
         options: {
           responsive: true,
-          scales: {
-            x: { display: true, title: { display: true, text: "Time" } },
-            y: { display: true, title: { display: true, text: label } },
+          plugins: {
+            legend: { display: false }
           },
-        },
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      const btnGenerate = document.getElementById("generate-music-btn");
-      const statusMsg = document.getElementById("status-msg");
-
-      try {
-        // Vérifie la connexion Fitbit après callback
-        const res = await fetch("/biometrics", { redirect: "manual" });
-        if (res.status === 302) {
-          return; // non autorisé → on reste sur la page (Start redirige vers /authorize)
+          scales: {
+            x: { display: true, title: { display: true, text: 'Temps' } },
+            y: { display: true, title: { display: true, text: label } }
+          }
         }
-        const data = await res.json();
-        document.getElementById("date-val").textContent = data.date || "-";
-        document.getElementById("time-val").textContent = data.time || "-";
-        document.getElementById("bpm-val").textContent = data.bpm || "-";
-        document.getElementById("cal-val").textContent = data.calories || "-";
-        document.getElementById("sedentary-val").textContent = data.sedentary || "-";
-        document.getElementById("steps-val").textContent = data.steps || "-";
-        document.getElementById("asleep-val").textContent = data.asleep || "-";
-        document.getElementById("eff-val").textContent = data.eff || "-";
-        document.getElementById("rem-val").textContent = data.rem || "-";
-        document.getElementById("deep-val").textContent = data.deep || "-";
-        document.getElementById("wake-val").textContent = data.wake || "-";
+      });
+    } catch (error) {
+      console.error(`Erreur lors du chargement de ${label} :`, error);
+    }
+  }
 
-        btnGenerate.style.display = "inline-block";
-        await renderChart("heart_history", "chart-heart", "Heart Rate (BPM)");
-        await renderChart("steps_history", "chart-steps", "Steps");
-        await renderChart("calories_history", "chart-calories", "Calories");
-        await renderChart("sedentary_history", "chart-sedentary", "Sedentary Minutes");
-      } catch (err) {
-        console.error(err);
-      }
-    });
+  document.addEventListener("DOMContentLoaded", async () => {
+    const statusMsg = document.getElementById("status-msg");
+    const btnGenerate = document.getElementById("generate-music-btn");
 
-    let lastPrompt = "",
-      lastInputText = "";
-    document.getElementById("generate-music-btn").addEventListener("click", async () => {
-      const statusMsg = document.getElementById("status-msg");
-      statusMsg.textContent = "🎶 Génération en cours... Veuillez patienter...";
-      statusMsg.style.color = "#fab1a0";
+    try {
+      const res = await fetch("/biometrics");
+      const data = await res.json();
 
-      const biometricData = {
-        date: document.getElementById("date-val").textContent,
-        time: document.getElementById("time-val").textContent,
-        bpm: document.getElementById("bpm-val").textContent,
-        calories: document.getElementById("cal-val").textContent,
-        sedentary: document.getElementById("sedentary-val").textContent,
-        steps: document.getElementById("steps-val").textContent,
-        asleep: document.getElementById("asleep-val").textContent,
-        eff: document.getElementById("eff-val").textContent,
-        rem: document.getElementById("rem-val").textContent,
-        deep: document.getElementById("deep-val").textContent,
-        wake: document.getElementById("wake-val").textContent,
-      };
+      // Remplissage des cards
+      document.getElementById("date-val").textContent      = data.date || "-";
+      document.getElementById("time-val").textContent      = data.time || "-";
+      document.getElementById("bpm-val").textContent       = data.bpm || "-";
+      document.getElementById("cal-val").textContent       = data.calories || "-";
+      document.getElementById("sedentary-val").textContent = data.sedentary || "-";
+      document.getElementById("steps-val").textContent     = data.steps || "-";
+      document.getElementById("sleep-val").textContent     = data.asleep || "-";
+      document.getElementById("eff-val").textContent       = data.eff || "-";
+      document.getElementById("rem-val").textContent       = data.rem || "-";
+      document.getElementById("deep-val").textContent      = data.deep || "-";
+      document.getElementById("wake-val").textContent      = data.wake || "-";
 
-      try {
-        const response = await fetch("/generate_music", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(biometricData),
-        });
-        const result = await response.json();
-        const audioPlayer = document.getElementById("audio-player");
+      btnGenerate.style.display = "block";
+
+      // Chargement des graphiques
+      await renderChart("heart_history",     "chart-heart",     "Fréquence cardiaque (BPM)");
+      await renderChart("calories_history",  "chart-calories",  "Calories brûlées");
+      await renderChart("steps_history",     "chart-steps",     "Nombre de pas");
+      await renderChart("sedentary_history", "chart-sedentary", "Minutes sédentaires");
+
+    } catch (e) {
+      console.error("Erreur récupération données:", e);
+      statusMsg.textContent = "⚠️ Impossible de charger les données.";
+    }
+  });
+
+  let lastPrompt = "", lastInputText = "";
+  const audioPlayer = document.getElementById("audio-player");
+  const btnPlayPause = document.getElementById("btn-play-pause");
+
+  btnPlayPause.style.display = "none"; // caché au départ
+
+  btnPlayPause.addEventListener("click", () => {
+    if (audioPlayer.paused) {
+      audioPlayer.play();
+      btnPlayPause.textContent = "⏸️ Pause";
+    } else {
+      audioPlayer.pause();
+      btnPlayPause.textContent = "▶️ Play";
+    }
+  });
+
+  audioPlayer.addEventListener("ended", () => {
+    btnPlayPause.textContent = "▶️ Play";
+  });
+
+  document.getElementById("generate-music-btn").addEventListener("click", async () => {
+    const statusMsg = document.getElementById("status-msg");
+    statusMsg.textContent = "🎶 Génération en cours... Veuillez patienter...";
+    statusMsg.style.color = "#fab1a0";
+
+    const biometricData = {
+      date: document.getElementById("date-val").textContent,
+      time: document.getElementById("time-val").textContent,
+      bpm: document.getElementById("bpm-val").textContent,
+      calories: document.getElementById("cal-val").textContent,
+      sedentary: document.getElementById("sedentary-val").textContent,
+      steps: document.getElementById("steps-val").textContent,
+      asleep: document.getElementById("sleep-val").textContent,
+      eff: document.getElementById("eff-val").textContent,
+      rem: document.getElementById("rem-val").textContent,
+      deep: document.getElementById("deep-val").textContent,
+      wake: document.getElementById("wake-val").textContent
+    };
+
+    try {
+      const response = await fetch("/generate_music", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(biometricData)
+      });
+      const result = await response.json();
+
+      if (result.status === "success") {
         const audioSrc = document.getElementById("audio-src");
 
-        if (result.status === "success") {
-          audioSrc.src = result.url;
-          audioPlayer.style.display = "block";
-          audioPlayer.style.opacity = 0;
-          audioPlayer.load();
-          setTimeout(() => {
-            audioPlayer.style.opacity = 1;
-            statusMsg.textContent = "✅ Musique générée avec succès ! Profitez-en 🎧";
-            statusMsg.style.color = "#55efc4";
-            document.getElementById("track-name").textContent = result.filename;
-            document.getElementById("feedback-section").style.display = "block";
-          }, 500);
+        audioSrc.src = result.url;
+        audioPlayer.style.display = "block";
+        audioPlayer.style.opacity = 1;
+        audioPlayer.load();
 
-          lastPrompt = result.prompt;
-          lastInputText = result.input_text;
-        } else {
-          statusMsg.textContent = "❌ Erreur : " + result.message;
-          statusMsg.style.color = "#ff7675";
-        }
-      } catch (err) {
-        console.error("Erreur lors de la génération :", err);
-        statusMsg.textContent = "❌ Une erreur est survenue pendant la génération.";
+        btnPlayPause.style.display = "inline-block";
+        btnPlayPause.textContent = "▶️ Play";
+
+        document.getElementById("track-name").textContent = result.filename;
+        document.getElementById("feedback-section").style.display = "block";
+        statusMsg.textContent = "✅ Musique générée avec succès ! Profitez-en 🎧";
+        statusMsg.style.color = "#55efc4";
+
+        lastPrompt = result.prompt;
+        lastInputText = result.input_text;
+
+      } else {
+        statusMsg.textContent = "❌ Erreur : " + result.message;
         statusMsg.style.color = "#ff7675";
       }
-    });
+    } catch (err) {
+      console.error("Erreur lors de la génération :", err);
+      statusMsg.textContent = "❌ Une erreur est survenue pendant la génération.";
+      statusMsg.style.color = "#ff7675";
+    }
+  });
 
-    document.querySelectorAll(".star").forEach((star, index) => {
-      star.addEventListener("click", async () => {
-        const rating = index + 1;
-        document.querySelectorAll(".star").forEach((s, i) =>
-          s.classList.toggle("selected", i <= index)
-        );
-        const feedbackMsg = document.getElementById("feedback-msg");
-        feedbackMsg.textContent = `Merci pour votre note : ${rating} ⭐`;
-        feedbackMsg.style.color = "#00b894";
-        try {
-          const res = await fetch("/submit_feedback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input_text: lastInputText,
-              music_prompt: lastPrompt,
-              score: rating,
-            }),
-          });
-          const result = await res.json();
-          console.log("✅ Feedback envoyé :", result.message);
-        } catch (err) {
-          console.error("❌ Erreur lors de l’envoi du feedback :", err);
-          feedbackMsg.textContent = "Erreur lors de l'envoi du feedback.";
-          feedbackMsg.style.color = "#d63031";
-        }
-      });
+  document.querySelectorAll(".star").forEach((star, index) => {
+    star.addEventListener("click", async () => {
+      const rating = index + 1;
+      document.querySelectorAll(".star").forEach((s, i) => s.classList.toggle("selected", i <= index));
+      const feedbackMsg = document.getElementById("feedback-msg");
+      feedbackMsg.textContent = `Merci pour votre note : ${rating} ⭐`;
+      feedbackMsg.style.color = "#00b894";
+      try {
+        const res = await fetch("/submit_feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input_text: lastInputText, music_prompt: lastPrompt, score: rating })
+        });
+        const result = await res.json();
+        console.log("✅ Feedback envoyé :", result.message);
+      } catch (err) {
+        console.error("❌ Erreur lors de l’envoi du feedback :", err);
+        feedbackMsg.textContent = "Erreur lors de l'envoi du feedback.";
+        feedbackMsg.style.color = "#d63031";
+      }
     });
-  </script>
+  });
+</script>
+
 </body>
-
 </html>
